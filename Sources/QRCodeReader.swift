@@ -161,15 +161,22 @@ public final class QRCodeReader: NSObject, AVCaptureMetadataOutputObjectsDelegat
     session.addOutput(metadataOutput)
     metadataOutput.setMetadataObjectsDelegate(self, queue: metadataObjectsQueue)
 
-    let allTypes = Set(metadataOutput.availableMetadataObjectTypes)
-    let filtered = metadataObjectTypes.filter { (mediaType) -> Bool in
-      allTypes.contains(mediaType)
+    metadataObjectsQueue.async { [weak self] in
+        guard let self = self else { return }
+
+        let allTypes = Set(self.metadataOutput.availableMetadataObjectTypes)
+        let filtered = self.metadataObjectTypes.filter { (mediaType) -> Bool in
+            allTypes.contains(mediaType)
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.metadataOutput.metadataObjectTypes = filtered
+            self.previewLayer.videoGravity          = .resizeAspectFill
+
+            self.session.commitConfiguration()
+        }
     }
 
-    metadataOutput.metadataObjectTypes = filtered
-    previewLayer.videoGravity          = .resizeAspectFill
-
-    session.commitConfiguration()
   }
 
   /// Switch between the back and the front camera.
@@ -365,12 +372,12 @@ public final class QRCodeReader: NSObject, AVCaptureMetadataOutputObjectsDelegat
       metadataObjectTypes = [.qr]
     }
 
-    let availableMetadataObjectTypes = output.availableMetadataObjectTypes
-    for metadataObjectType in metadataObjectTypes! {
-      if !(availableMetadataObjectTypes.contains(where: { $0 == metadataObjectType })) {
-        return false
+      let availableMetadataObjectTypes = output.availableMetadataObjectTypes
+      for metadataObjectType in metadataObjectTypes! {
+          if !(availableMetadataObjectTypes.contains(where: { $0 == metadataObjectType })) { $0 == metadataObjectType } {
+              return false
+          }
       }
-    }
 
     return true
   }
