@@ -130,7 +130,8 @@ public final class QRCodeReader: NSObject, AVCaptureMetadataOutputObjectsDelegat
 
     super.init()
 
-    sessionQueue.async {
+    sessionQueue.async { [weak self] in
+      guard let self = self else { return }
       self.configureDefaultComponents(withCaptureDevicePosition: captureDevicePosition)
     }
   }
@@ -206,12 +207,14 @@ public final class QRCodeReader: NSObject, AVCaptureMetadataOutputObjectsDelegat
    *Notes: if `stopScanningWhenCodeIsFound` is sets to true (default behaviour), each time the scanner found a code it calls the `stopScanning` method.*
    */
   public func startScanning() {
-    sessionQueue.async {
+    sessionQueue.async { [weak self] in
+      guard let self = self else { return }
       guard !self.session.isRunning else { return }
 
       self.session.startRunning()
 
-      DispatchQueue.main.async {
+      DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
         self.lifeCycleDelegate?.readerDidStartScanning()
       }
     }
@@ -219,12 +222,14 @@ public final class QRCodeReader: NSObject, AVCaptureMetadataOutputObjectsDelegat
 
   /// Stops scanning the codes.
   public func stopScanning() {
-    sessionQueue.async {
+    sessionQueue.async { [weak self] in
+      guard let self = self else { return }
       guard self.session.isRunning else { return }
 
       self.session.stopRunning()
 
-      DispatchQueue.main.async {
+      DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
         self.lifeCycleDelegate?.readerDidStopScanning()
       }
     }
@@ -372,8 +377,8 @@ public final class QRCodeReader: NSObject, AVCaptureMetadataOutputObjectsDelegat
       metadataObjectTypes = [.qr]
     }
 
-      let availableMetadataObjectTypes = output.availableMetadataObjectTypes
-      for metadataObjectType in metadataObjectTypes! {
+      guard let availableMetadataObjectTypes = output.availableMetadataObjectTypes else { return true }
+      for metadataObjectType in metadataObjectTypes {
           if !(availableMetadataObjectTypes.contains(where: { $0 == metadataObjectType })) {
               return false
           }
